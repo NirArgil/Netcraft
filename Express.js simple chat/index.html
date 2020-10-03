@@ -1,0 +1,123 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Express Chat</title>
+</head>
+<body>
+  <div id="history">
+    Loading...
+  </div>
+
+  <form>
+    <input name="name" placeholder="Name">
+    <input name="message" placeholder="Message">
+    <input type="submit">
+  </form>
+  <button id="deleteHistoryBtn">Clear Messeges</button>
+
+  <script>
+    const form = document.querySelector('form');
+    const chat = document.querySelector('#history');
+    const deleteHistoryBtn = document.querySelector('#deleteHistoryBtn');
+    
+
+    const serverURL = 'http://localhost:8080';
+
+    deleteHistoryBtn.addEventListener('click', e => {
+      e.preventDefault();
+      deleteHistory();
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = form.name.value;
+      const message = form.message.value;
+      sendMessage(name, message);
+    });
+
+    async function sendMessage(name, message) {
+      const response = await fetch(`${serverURL}/messeges`, {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'},
+          body: JSON.stringify ({
+            name,
+            message,
+          }),
+          
+        });
+    
+      const messeges = await response.json();
+      renderMesseges(messeges);
+      form.message.value = '';
+    };
+
+    async function readMesseges() {
+      const response = await fetch(`${serverURL}/messeges`);
+      const messeges = await response.json();
+      renderMesseges(messeges);
+    };
+
+    async function deleteHistory() {
+      const response = await fetch(`${serverURL}/messeges`, {
+        method: 'DELETE'
+      })
+      const messeges = await response.json();
+      renderMesseges(messeges);
+    };
+
+    async function deleteMessage(id) {
+                const response = await fetch(`${serverURL}/messages/${id}`, {
+                    method: "DELETE",
+                });
+                const messages = await response.json();
+                renderMessages(messages);
+            };
+
+    async function editMessage(id) {
+                let newMessage = prompt("Enter new message");
+                const response = await fetch(`${serverURL}/messages/${id}/${newMessage}`, {
+                    method: "PUT",
+                });
+                const messages = await response.json();
+                renderMessages(messages);
+            };
+
+
+    function renderMesseges(messeges) {
+      chat.innerHTML = messeges.reduce((html, {name, message,id }) => {     
+         
+        html += `
+          <div class="message">
+            <span class="message-author">${name}: </span>
+            <span class="message-text">${message}</span>
+            <button class="editMessageBtn" id="${id}_edit" type="button">edit</button>
+            <button class="deleteMessageBtn" id="${id}_delete" type="button">X</button>
+          </div>
+              `;
+        return html;
+      }, '');
+      
+      document.querySelectorAll('.deleteMessageBtn').forEach(btn => {
+            let id = (btn.id).replace('_delete','');
+            btn.addEventListener('click', e => {
+            e.preventDefault();
+            deleteMessage(id);
+         })
+     });
+
+     document.querySelectorAll('.editMessageBtn').forEach(btn => {
+       let id = (btn.id).replace('_edit','');
+       btn.addEventListener('click', e => {
+        e.preventDefault();
+        editMessage(id);
+            })
+        });
+
+    };
+
+    readMesseges();
+  </script>
+</body>
+</html>
